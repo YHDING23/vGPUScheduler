@@ -122,7 +122,8 @@ func (g *vGPUScheduler) Filter(ctx context.Context, state *framework.CycleState,
 // }
 
 func (g *vGPUScheduler) Score(ctx context.Context, state *framework.CycleState, p *v1.Pod, nodeName string) (int64, *framework.Status) {
-	// Get Node Info
+    klog.V(5).InfoS("Alnair scheduler is working on score plugin, pod name:", pod.Name)	err := UpdatePodAnnotations(g.clientset, pod)
+	//patch timestamp annotation on pod
 	err := UpdatePodAnnotations(g.clientset, pod)
 	if err != nil {
 		return 0, framework.NewStatus(framework.Error, fmt.Sprintf("cannot patch timestamp to pod %s, err: %v", pod.Name, err))
