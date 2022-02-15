@@ -3,13 +3,13 @@ package vGPUSched
 import (
 	"context"
 	"encoding/json"
-    "time"
 	"errors"
 	"fmt"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/klog/v2"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 	schedulerconfig "k8s.io/kube-scheduler/config/v1"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 
@@ -31,24 +31,24 @@ const (
 var (
 	_ framework.FilterPlugin    = &vGPUSched{}
 	_ framework.ScorePlugin     = &vGPUSched{}
-    _ framework.ScoreExtensions = &vGPUSched{}
+	_ framework.ScoreExtensions = &vGPUSched{}
 )
 
 type vGPUSched struct {
-    handle framework.Handle
-    clientset *kubernetes.Clientset
+	handle    framework.Handle
+	clientset *kubernetes.Clientset
 }
 
 func New(_ runtime.Object, handle framework.Handle) (framework.Plugin, error) {
-    klog.V(5).InfoS("Alnair vGPU Scheduling plugin is enabled")
+	klog.V(5).InfoS("Alnair vGPU Scheduling plugin is enabled")
 
-    cs, err := clientsetInit()
+	cs, err := clientsetInit()
 	if err != nil {
 		return nil, fmt.Errorf("Alnair Cannot initialize in-cluster kubernetes config")
 	}
 
 	return &vGPUSched{
-		handle: handle,
+		handle:    handle,
 		clientset: cs,
 	}, nil
 }
@@ -104,7 +104,7 @@ func (g *vGPUSched) Filter(ctx context.Context, state *framework.CycleState, pod
 	klog.V(5).Infof("filter pod: %v, node: %v\n", pod.Name, node.Node().Name)
 	// write timestamp to every pod which comes to here
 
-    cs, err := clientsetInit()
+	cs, err := clientsetInit()
 	if err != nil {
 		return nil, fmt.Errorf("Alnair Cannot initialize in-cluster kubernetes config")
 	}
@@ -116,7 +116,7 @@ func (g *vGPUSched) Filter(ctx context.Context, state *framework.CycleState, pod
 
 	nodeinfos := utils.newNodeInfos(node.Node())
 	if allocatable := nodeinfos.Assume(pod); allocatable {
-	    return framework.NewStatus(framework.Success, "")
+		return framework.NewStatus(framework.Success, "")
 	}
 	return framework.NewStatus(framework.Unschedulable, "Node:"+node.Node().Name)
 }
@@ -138,19 +138,19 @@ func (g *vGPUSched) Score(ctx context.Context, state *framework.CycleState, p *v
 		return 0, framework.NewStatus(framework.Error, fmt.Sprintf("getting node %q from Snapshot: %v", nodeName, err))
 	}
 
-    intScore, err := CalculateScore(nodeInfo)
+	intScore, err := CalculateScore(nodeInfo)
 	if err != nil {
 		klog.V(5).Errorf("CalculateScore Error: %v", err)
 		return 0, framework.NewStatus(framework.Error, fmt.Sprintf("Score Node: %v Error: %v", nodeInfo.Node().Name, err))
 	}
 
-    return intScore, framework.NewStatus(framework.Success)
+	return intScore, framework.NewStatus(framework.Success)
 }
 
 func CalculateScore(info *framework.NodeInfo) uint64 {
-    allocateMemorySum := uint64(0)
-    for _, pod := range info.Pods {
-		if mem, ok := pod.Pod.GetLabels()[ResourceName];ok {
+	allocateMemorySum := uint64(0)
+	for _, pod := range info.Pods {
+		if mem, ok := pod.Pod.GetLabels()[ResourceName]; ok {
 			allocateMemorySum += StrToUint64(mem)
 		}
 	}
@@ -164,7 +164,6 @@ func StrToUint64(str string) uint64 {
 		return uint64(i)
 	}
 }
-
 
 func (g *vGPUSched) NormalizeScore(_ context.Context, _ *framework.CycleState, pod *v1.Pod, scores framework.NodeScoreList) *framework.Status {
 	var (

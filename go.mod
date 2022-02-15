@@ -1,4 +1,4 @@
-module UvGPUScheduler
+module vGPUScheduler
 
 go 1.17
 
@@ -56,7 +56,6 @@ replace k8s.io/sample-controller => k8s.io/sample-controller v0.21.1
 
 
 require (
-	github.com/spf13/cobra v1.1.1
 	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
@@ -146,3 +145,4 @@ require (
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.15 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
+)

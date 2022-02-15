@@ -4,8 +4,8 @@ import (
 	"log"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"strconv"
-	"time"
+    "strings"
+    "sort"
 )
 
 // DeviceInfos is pod level aggregated information
@@ -32,9 +32,10 @@ func (d *DeviceInfos) GetUsedGPUMemory() (gpuMem uint) {
 // 	d.rwmu.RLock()
 // 	defer d.rwmu.RUnlock()
 	for _, pod := range d.podMap {
-	    if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodPending{
-	        log.Printf("debug: the pod %s in ns %s is counted as used due to its status in %s", pod.Name, pod.Namespace, pod.Status.Phase)
-	        gpuMem += GetGPUMemoryFromPodAnnotation(pod)
+		if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodPending{
+			log.Printf("debug: the pod %s in ns %s is counted as used due to its status in %s", pod.Name, pod.Namespace, pod.Status.Phase)
+			gpuMem += GetGPUMemoryFromPodAnnotation(pod)
+	    }
 	}
 	return gpuMem
 }
@@ -42,10 +43,11 @@ func (d *DeviceInfos) GetUsedGPUMemory() (gpuMem uint) {
 // GetGPUMemoryFromPodAnnotation gets the GPU Memory of the pod
 func GetGPUMemoryFromPodAnnotation(pod *v1.Pod) (gpuMemory uint) {
 	if len(pod.ObjectMeta.Annotations) > 0 {
-		vGPU_ID, found := pod.ObjectMeta.Annotations["alnair-gpu-id"]
+		vet, found := pod.ObjectMeta.Annotations["ai.centaurus.io/alnair-gpu-id"]
+		vGPU_ID := strings.Split(vet,",")
 		idx := GetvGPUIDX(vGPU_ID)
 		if found {
-			s, _ := len(idx)
+			s := len(idx)
 			if s < 0 {
 				s = 0
 			}
@@ -62,12 +64,13 @@ func GetGPUMemoryFromPodAnnotation(pod *v1.Pod) (gpuMemory uint) {
 
 // get vGPU index
 func GetvGPUIDX(vGPU_ID []string) []string {
-    var ret []string
-    for _, sid := range vGPU_ID {
-        id := string.SplitN(sid, "_", 2)[1]
-        if len(ret) == 0 || id != ret[len(ret)-1]{
-            ret = append(ret, id)
-        }
-    }
-    return ret
+	var ret []string
+	sort.Strings(vGPU_ID)
+	for _, sid := range vGPU_ID {
+		id := strings.SplitN(sid, "_", 2)[1]
+		if len(ret) == 0 || id != ret[len(ret)-1]{
+			ret = append(ret, id)
+		}
+	}
+	return ret
 }

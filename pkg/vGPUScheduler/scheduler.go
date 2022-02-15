@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/json"
     "time"
-	"errors"
 	"fmt"
+	"errors"
+	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/apimachinery/pkg/runtime"
-	schedulerconfig "k8s.io/kube-scheduler/config/v1"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
-
-	"sigs.k8s.io/scheduler-plugins/pkg/apis/config"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -108,6 +106,13 @@ func (g *vGPUScheduler) Filter(ctx context.Context, state *framework.CycleState,
 	if allocatable := nodeinfos.Assume(pod); allocatable {
 	    return framework.NewStatus(framework.Success, "")
 	}
+
+	//patch timestamp annotation on pod
+	err := UpdatePodAnnotations(g.clientset, pod)
+	if err != nil {
+		return framework.NewStatus(framework.Error, fmt.Sprintf("cannot patch timestamp to pod %s, err: %v", pod.Name, err))
+	}
+
 	return framework.NewStatus(framework.Unschedulable, "Node:"+node.Node().Name)
 }
 
@@ -121,13 +126,9 @@ func (g *vGPUScheduler) Filter(ctx context.Context, state *framework.CycleState,
 // 	return newPod
 // }
 
-func (g *vGPUScheduler) Score(ctx context.Context, state *framework.CycleState, p *v1.Pod, nodeName string) (int64, *framework.Status) {
-    klog.V(5).InfoS("Alnair scheduler is working on score plugin, pod name:", pod.Name)	err := UpdatePodAnnotations(g.clientset, pod)
-	//patch timestamp annotation on pod
-	err := UpdatePodAnnotations(g.clientset, pod)
-	if err != nil {
-		return 0, framework.NewStatus(framework.Error, fmt.Sprintf("cannot patch timestamp to pod %s, err: %v", pod.Name, err))
-	}
+func (g *vGPUScheduler) Score(ctx context.Context, state *framework.CycleState, pod *v1.Pod, nodeName string) (int64, *framework.Status) {
+    klog.V(5).InfoS("Alnair scheduler is working on score plugin, pod name:", pod.Name)
+
 
 	klog.V(5).InfoS("Alnair add annotation to pod ", pod.Name)
 	nodeInfo, err := g.handle.SnapshotSharedLister().NodeInfos().Get(nodeName)
@@ -137,21 +138,27 @@ func (g *vGPUScheduler) Score(ctx context.Context, state *framework.CycleState, 
 
     intScore, err := CalculateScore(nodeInfo)
 	if err != nil {
-		klog.V(5).Errorf("CalculateScore Error: %v", err)
+		klog.Errorf("CalculateScore Error: %v", err)
 		return 0, framework.NewStatus(framework.Error, fmt.Sprintf("Score Node: %v Error: %v", nodeInfo.Node().Name, err))
 	}
 
-    return intScore, framework.NewStatus(framework.Success)
+    return Uint64ToInt64(intScore), framework.NewStatus(framework.Success)
 }
 
-func CalculateScore(info *framework.NodeInfo) uint64 {
+func CalculateScore(info *framework.NodeInfo) (uint64, error) {
     allocateMemorySum := uint64(0)
     for _, pod := range info.Pods {
-		if mem, ok := pod.Pod.GetLabels()[ResourceName];ok {
+		if mem, ok := pod.Pod.GetLabels()["alnair/vgpu-memory"];ok {
 			allocateMemorySum += StrToUint64(mem)
+		} else {
+		    return 0, errors.New("calculate score error")
 		}
 	}
-	return allocateMemorySum
+	return allocateMemorySum, nil
+}
+
+func Uint64ToInt64(intNum uint64) int64 {
+	return StrToInt64(strconv.FormatUint(intNum, 10))
 }
 
 func StrToUint64(str string) uint64 {
@@ -159,6 +166,14 @@ func StrToUint64(str string) uint64 {
 		return 0
 	} else {
 		return uint64(i)
+	}
+}
+
+func StrToInt64(str string) int64 {
+	if i, e := strconv.Atoi(str); e != nil {
+		return 0
+	} else {
+		return int64(i)
 	}
 }
 

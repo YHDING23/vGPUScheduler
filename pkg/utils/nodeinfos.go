@@ -1,16 +1,10 @@
 package utils
 
 import (
-	"fmt"
 	"log"
 	"strconv"
-	"strings"
-
+    "strings"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
- 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
 
 )
 
@@ -26,14 +20,14 @@ type NodeInfos struct {
 // get Physical gpuCount from node annotation
 func GetPhysicalGPUCountFromNodeAnno(node *v1.Node) int {
     val := -1
+
     if len(node.ObjectMeta.Annotations) > 0 {
-        val, found := node.ObjectMeta.Annotations["physical-gpu-count"]
-        //assume physical-gpu-count is string rather than int
+        vet, found := node.ObjectMeta.Annotations["ai.centaurus.io/physical-gpu-count"]
         if found {
             var err error
-			val, err = strconv.Atoi(val)
+			val, err = strconv.Atoi(vet)
 			if err != nil {
-				log.Printf("warn: Failed due to %v for node %s", err, node.Name)
+				log.Printf("warn: Failed obtain node annotation due to %v for node %s", err, node.Name)
 				val = -1
 			}
         }
@@ -44,30 +38,30 @@ func GetPhysicalGPUCountFromNodeAnno(node *v1.Node) int {
 func GetVirtualGPUCountFromNodeAnno(node *v1.Node) int {
     val := -1
     if len(node.ObjectMeta.Annotations) > 0 {
-        vet, found := node.ObjectMeta.Annotations["virtual-gpu-count"]
-        //assume virtual-gpu-count is string rather than int
+        vet, found := node.ObjectMeta.Annotations["ai.centaurus.io/virtual-gpu-count"]
+        vGPU_count := strings.Split(vet,",")
         if found {
             var err error
-            val, err = strconv.Atoi(vet[0])
+            val, err = strconv.Atoi(vGPU_count[0])
             if err != nil {
-	            log.Printf("warn: Failed due to %v for node %s", err, node.Name)
+	            log.Printf("warn: Failed obtain node annotation due to %v for node %s", err, node.Name)
 			    val = -1
+			}
         }
     }
     return val
-
 }
 
 func NewNodeInfos(node *v1.Node) *NodeInfos {
     gpuCount := GetPhysicalGPUCountFromNodeAnno(node)
     if gpuCount == -1 {
-        log.Printf("debug: cannot get Physical GPU count from node annotation"
+        log.Printf("debug: cannot get Physical GPU count from node annotation")
     }
 
 	log.Printf("debug: NewNodeInfos() creates nodeInfos for %s", node.Name)
 	devMap := map[int]*DeviceInfos{}
 	for i := 0; i < int(gpuCount); i++ {
-		devMap[i] = newDeviceInfos(i, GetVirtualGPUCountFromNodeAnno(node)
+		devMap[i] = newDeviceInfos(i, uint(GetVirtualGPUCountFromNodeAnno(node)))
 	}
 
 	if len(devMap) == 0 {
@@ -137,7 +131,7 @@ func GetGPUMemoryFromPodResource(pod *v1.Pod) int {
 	var total int
 	containers := pod.Spec.Containers
 	for _, container := range containers {
-		if val, ok := container.Resources.Limits[ResourceName]; ok {
+		if val, ok := container.Resources.Limits["alnair/vgpu-memory"]; ok {
 			total += int(val.Value())
 		}
 	}
@@ -173,7 +167,7 @@ func getAssumeTimeFromPodAnnotation(pod *v1.Pod) (assumeTime uint64) {
     if assumeTimeStr, ok := pod.ObjectMeta.Annotations["scheduler-timestamp"]; ok {
         u64, err := strconv.ParseUint(assumeTimeStr, 10, 64)
         if err != nil {
-            log.Warningf("Failed to parse assume Timestamp %s due to %v", assumeTimeStr, err)
+            log.Printf("Failed to parse assume Timestamp %s due to %v", assumeTimeStr, err)
         } else {
             assumeTime = u64
         }
