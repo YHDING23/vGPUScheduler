@@ -5,10 +5,10 @@ local:
 
 build:
 
-	sudo docker build --no-cache . -t centaurusinfra/vgpu-scheduler:1.0.1
+	sudo docker build --no-cache . -t centaurusinfra/vgpu-scheduler:1.0.2
 
 push:
-	sudo docker push centaurusinfra/vgpu-scheduler:1.0.1
+	sudo docker push centaurusinfra/vgpu-scheduler:1.0.2
 
 # Run go fmt against code
 fmt:
