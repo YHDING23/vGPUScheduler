@@ -1,7 +1,7 @@
 all: local
 
 local:
-	GOOS=linux GOARCH=amd64 go build -o=vGPUScheduler ./cmd/scheduler
+	GOOS=linux GOARCH=amd64 go build -o=kube-scheduler ./cmd/scheduler
 
 build:
 
@@ -15,4 +15,4 @@ fmt:
 	sudo gofmt -l -w .
 
 clean: fmt vet
-	sudo rm -f vGPUScheduler
+	sudo rm -f kube-scheduler

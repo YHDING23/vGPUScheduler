@@ -2,6 +2,6 @@ FROM debian:stretch-slim
 
 WORKDIR /
 
-COPY vGPUScheduler /usr/local/bin
+COPY kube-scheduler /usr/local/bin
 
-CMD ["vGPUScheduler"]
+CMD ["kube-scheduler"]
