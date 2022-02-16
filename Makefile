@@ -1,22 +1,18 @@
 all: local
 
-local: fmt vet
-	GOOS=linux GOARCH=amd64 go build  -o=bin/vGPUScheduler ./cmd/scheduler
+local:
+	GOOS=linux GOARCH=amd64 go build -o=vGPUScheduler ./cmd/scheduler
 
-build:  local
+build:
 
-	sudo docker build --no-cache . -t centaurusinfra/vGPU-scheduler:1.0.1
+	sudo docker build --no-cache . -t centaurusinfra/vgpu-scheduler:1.0.1
 
-push:   build
-	sudo docker push centaurusinfra/vGPU-scheduler:1.0.1
+push:
+	sudo docker push centaurusinfra/vgpu-scheduler:1.0.1
 
 # Run go fmt against code
 fmt:
-	go fmt ./...
-
-# Run go vet against code
-vet:
-	go vet -v ./...
+	sudo gofmt -l -w .
 
 clean: fmt vet
 	sudo rm -f vGPUScheduler

@@ -61,7 +61,7 @@ func NewNodeInfos(node *v1.Node) *NodeInfos {
 	log.Printf("debug: NewNodeInfos() creates nodeInfos for %s", node.Name)
 	devMap := map[int]*DeviceInfos{}
 	for i := 0; i < int(gpuCount); i++ {
-		devMap[i] = newDeviceInfos(i, uint(GetVirtualGPUCountFromNodeAnno(node)))
+		devMap[i] = NewDeviceInfos(i, uint(GetVirtualGPUCountFromNodeAnno(node)))
 	}
 
 	if len(devMap) == 0 {

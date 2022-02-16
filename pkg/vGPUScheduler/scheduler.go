@@ -102,7 +102,7 @@ func (g *vGPUScheduler) Filter(ctx context.Context, state *framework.CycleState,
 	klog.V(5).Infof("filter pod: %v, node: %v\n", pod.Name, node.Node().Name)
 	// write timestamp to every pod which comes to here
 
-	nodeinfos := utils.newNodeInfos(node.Node())
+	nodeinfos := utils.NewNodeInfos(node.Node())
 	if allocatable := nodeinfos.Assume(pod); allocatable {
 	    return framework.NewStatus(framework.Success, "")
 	}

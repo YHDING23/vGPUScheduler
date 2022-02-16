@@ -2,6 +2,6 @@ FROM debian:stretch-slim
 
 WORKDIR /
 
-COPY bin/vGPUScheduler /usr/local/bin
+COPY vGPUScheduler /usr/local/bin
 
 CMD ["vGPUScheduler"]

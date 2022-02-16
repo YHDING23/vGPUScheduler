@@ -56,6 +56,7 @@ replace k8s.io/sample-controller => k8s.io/sample-controller v0.21.1
 
 
 require (
+	github.com/spf13/cobra v1.1.1
 	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2

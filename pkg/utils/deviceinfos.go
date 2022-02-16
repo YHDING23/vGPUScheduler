@@ -17,7 +17,7 @@ type DeviceInfos struct {
 	totalGPUMem uint
 }
 
-func newDeviceInfos(index int, totalGPUMem uint) *DeviceInfos {
+func NewDeviceInfos(index int, totalGPUMem uint) *DeviceInfos {
 	return &DeviceInfos{
 		idx:         index,
 		totalGPUMem: totalGPUMem,
